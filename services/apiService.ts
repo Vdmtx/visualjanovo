@@ -1,4 +1,5 @@
 
+
 import {
   BrandingProject,
   ProjectStatus,
@@ -358,4 +359,151 @@ const processProjectInBackground = async (projectId: string) => {
     // Potentially add an errorMessage field to BrandingProject
     console.log(`[Backend Sim] Project ${projectId} failed.`);
   }
+};
+
+export const regenerateLogo = async (projectId: string, logoToReplace: Logo): Promise<Logo> => {
+  await delay(7000 + Math.random() * 3000); // Simulate longer image generation
+
+  const projectIndex = projects.findIndex(p => p.id === projectId);
+  if (projectIndex === -1) throw new Error('Projeto não encontrado para regenerar logo.');
+  const project = projects[projectIndex];
+
+  if (!project.mediaAnalysis || !project.colorPalette || project.colorPalette.length === 0) {
+    throw new Error('Dados do projeto incompletos para regenerar logo.');
+  }
+
+  const colorsForImages = project.colorPalette.length >= 4 ?
+    project.colorPalette.slice(0, 4) :
+    ['#00C6FF', '#0A0F1C', '#F5F7FA', '#9292FF']; // Fallback colors
+
+  // Use the positive prompt for regeneration, if available, otherwise fallback to original
+  const regenerationPrompt = logoToReplace.positivePrompt || logoToReplace.prompt;
+
+  console.log(`[Backend Sim] Regenerating Logo (Variacao ${logoToReplace.variacao}) for ${projectId}`);
+  const imageUrl = await generateImage({
+    model: IMAGE_GENERATION_MODEL,
+    prompt: regenerationPrompt,
+    config: {
+      numberOfImages: 1,
+      outputMimeType: 'image/png',
+      aspectRatio: '1:1',
+    },
+  });
+
+  // Re-generate continuous generation prompts for the new logo to allow further iterations
+  const logoContinuousPromptInput = LOGO_CONTINUOUS_PROMPT_GENERATION_PROMPT
+    .replace('{nome}', project.name)
+    .replace('{nicho}', project.niche)
+    .replace('{descricao}', project.description || '')
+    .replace('{slogan}', project.slogan || 'N/A')
+    .replace('{publicoAlvo}', project.mediaAnalysis.publicoAlvo)
+    .replace('{tonalidadeComunicacao}', project.mediaAnalysis.tonalidadeComunicacao)
+    .replace('{pontosFortes}', project.mediaAnalysis.pontosFortes.slice(0, 3).join(', '))
+    .replace('{oportunidades}', project.mediaAnalysis.oportunidades.slice(0, 3).join(', '))
+    .replace('{colorPalette}', colorsForImages.slice(0, 2).join(', '))
+    .replace('{originalPrompt}', regenerationPrompt);
+
+  const newContinuousPrompts = await generateText<ContinuousGenerationPrompts>(
+    {
+      model: TEXT_GENERATION_MODEL,
+      contents: logoContinuousPromptInput,
+    },
+    continuousGenerationPromptsSchema
+  );
+
+  const newLogo: Logo = {
+    ...logoToReplace,
+    id: generateUniqueId(), // New ID for the new image instance
+    url: imageUrl,
+    prompt: regenerationPrompt, // Store the prompt used for this generation
+    positivePrompt: newContinuousPrompts.positive,
+    negativePrompt: newContinuousPrompts.negative,
+  };
+
+  project.logos = project.logos?.map(logo => logo.id === logoToReplace.id ? newLogo : logo);
+  Object.assign(project, { updatedAt: new Date().toISOString() }); // Update project timestamp
+
+  return newLogo;
+};
+
+
+export const regenerateBanner = async (projectId: string, bannerToReplace: Banner): Promise<Banner> => {
+  await delay(7000 + Math.random() * 3000); // Simulate longer image generation
+
+  const projectIndex = projects.findIndex(p => p.id === projectId);
+  if (projectIndex === -1) throw new Error('Projeto não encontrado para regenerar banner.');
+  const project = projects[projectIndex];
+
+  if (!project.mediaAnalysis || !project.socialMediaStrategy || !project.colorPalette || project.colorPalette.length === 0) {
+    throw new Error('Dados do projeto incompletos para regenerar banner.');
+  }
+
+  const colorsForImages = project.colorPalette.length >= 4 ?
+    project.colorPalette.slice(0, 4) :
+    ['#00C6FF', '#0A0F1C', '#F5F7FA', '#9292FF']; // Fallback colors
+
+  // Use the positive prompt for regeneration, if available, otherwise fallback to original
+  const regenerationPrompt = bannerToReplace.positivePrompt || bannerToReplace.prompt;
+
+  let aspectRatio: '1:1' | '9:16' | '4:3' | '3:4' | '16:9' = '1:1'; // Default
+  switch (bannerToReplace.formato) {
+    case BannerFormat.SQUARE:
+      aspectRatio = '1:1';
+      break;
+    case BannerFormat.VERTICAL_STORY:
+      aspectRatio = '9:16';
+      break;
+    case BannerFormat.VERTICAL_FEED:
+      aspectRatio = '3:4'; // Imagen supports 3:4 for vertical, not directly 4:5
+      break;
+  }
+
+  console.log(`[Backend Sim] Regenerating Banner (${bannerToReplace.formato}) for ${projectId}`);
+  const imageUrl = await generateImage({
+    model: IMAGE_GENERATION_MODEL,
+    prompt: regenerationPrompt,
+    config: {
+      numberOfImages: 1,
+      outputMimeType: 'image/png',
+      aspectRatio: aspectRatio,
+    },
+  });
+
+  // Re-generate continuous generation prompts for the new banner
+  const bannerContinuousPromptInput = BANNER_CONTINUOUS_PROMPT_GENERATION_PROMPT
+    .replace('{nome}', project.name)
+    .replace('{nicho}', project.niche)
+    .replace('{descricao}', project.description || '')
+    .replace('{slogan}', project.slogan || 'N/A')
+    .replace('{publicoAlvo}', project.mediaAnalysis.publicoAlvo)
+    .replace('{tonalidadeComunicacao}', project.mediaAnalysis.tonalidadeComunicacao)
+    .replace('{pontosFortes}', project.mediaAnalysis.pontosFortes.slice(0, 3).join(', '))
+    .replace('{oportunidades}', project.mediaAnalysis.oportunidades.slice(0, 3).join(', '))
+    .replace('{colorPalette}', colorsForImages.slice(0, 2).join(', '))
+    .replace('{objetivoPrincipalSocial}', project.socialMediaStrategy.objetivoPrincipal || 'N/A')
+    .replace('{plataformasRecomendadas}', project.socialMediaStrategy.plataformasRecomendadas.slice(0, 2).join(', ') || 'N/A')
+    .replace('{formato}', bannerToReplace.formato)
+    .replace('{originalPrompt}', regenerationPrompt);
+
+  const newContinuousPrompts = await generateText<ContinuousGenerationPrompts>(
+    {
+      model: TEXT_GENERATION_MODEL,
+      contents: bannerContinuousPromptInput,
+    },
+    continuousGenerationPromptsSchema
+  );
+
+  const newBanner: Banner = {
+    ...bannerToReplace,
+    id: generateUniqueId(), // New ID for the new image instance
+    url: imageUrl,
+    prompt: regenerationPrompt, // Store the prompt used for this generation
+    positivePrompt: newContinuousPrompts.positive,
+    negativePrompt: newContinuousPrompts.negative,
+  };
+
+  project.banners = project.banners?.map(banner => banner.id === bannerToReplace.id ? newBanner : banner);
+  Object.assign(project, { updatedAt: new Date().toISOString() }); // Update project timestamp
+
+  return newBanner;
 };

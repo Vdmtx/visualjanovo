@@ -1,6 +1,8 @@
+
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProject } from '../services/apiService';
+import { getProject, regenerateLogo, regenerateBanner } from '../services/apiService'; // Importar as novas funções
 import {
   BrandingProject,
   ProjectStatus,
@@ -17,6 +19,7 @@ import { Spinner } from '../components/ui/Spinner';
 import { Skeleton } from '../components/ui/Skeleton';
 import { useToast, ToastType } from '../components/ui/Toast';
 import { BANNER_FORMAT_LABELS } from '../constants';
+import { ImageModal } from '../components/ui/ImageModal';
 import JSZip from 'jszip';
 
 // Helper component for rendering strategy/analysis lists
@@ -58,6 +61,10 @@ export const ResultsPage: React.FC = () => {
   const [project, setProject] = React.useState<BrandingProject | undefined>(undefined);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [downloading, setDownloading] = React.useState<boolean>(false);
+  const [selectedImageUrl, setSelectedImageUrl] = React.useState<string | null>(null);
+  const [regeneratingLogoId, setRegeneratingLogoId] = React.useState<string | null>(null); // Novo estado para carregamento de logo individual
+  const [regeneratingBannerId, setRegeneratingBannerId] = React.useState<string | null>(null); // Novo estado para carregamento de banner individual
+
 
   // Poll for project status
   React.useEffect(() => {
@@ -84,7 +91,6 @@ export const ResultsPage: React.FC = () => {
       }
     };
 
-    // Fix: Changed NodeJS.Timeout to number as setTimeout in browsers returns a number.
     let intervalId: number;
     if (loading) {
       fetchProject(); // Initial fetch
@@ -95,6 +101,57 @@ export const ResultsPage: React.FC = () => {
       if (intervalId) clearInterval(intervalId);
     };
   }, [projectId, loading, navigate, addToast]);
+
+  const handleRegenerateLogo = async (logoToRegenerate: Logo) => {
+    if (!project) return;
+    setRegeneratingLogoId(logoToRegenerate.id);
+    addToast(`Gerando nova variação de logo...`, ToastType.INFO);
+    try {
+      const newLogo = await regenerateLogo(project.id, logoToRegenerate);
+      setProject(prevProject => {
+        if (!prevProject) return prevProject;
+        return {
+          ...prevProject,
+          logos: prevProject.logos?.map(logo =>
+            logo.id === logoToRegenerate.id ? newLogo : logo
+          ),
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      addToast(`Nova logo gerada com sucesso!`, ToastType.SUCCESS);
+    } catch (error: any) {
+      addToast(`Erro ao regenerar logo: ${error.message}`, ToastType.ERROR);
+      console.error('Regenerate Logo error:', error);
+    } finally {
+      setRegeneratingLogoId(null);
+    }
+  };
+
+  const handleRegenerateBanner = async (bannerToRegenerate: Banner) => {
+    if (!project) return;
+    setRegeneratingBannerId(bannerToRegenerate.id);
+    addToast(`Gerando novo banner (${BANNER_FORMAT_LABELS[bannerToRegenerate.formato]})...`, ToastType.INFO);
+    try {
+      const newBanner = await regenerateBanner(project.id, bannerToRegenerate);
+      setProject(prevProject => {
+        if (!prevProject) return prevProject;
+        return {
+          ...prevProject,
+          banners: prevProject.banners?.map(banner =>
+            banner.id === bannerToRegenerate.id ? newBanner : banner
+          ),
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      addToast(`Novo banner gerado com sucesso!`, ToastType.SUCCESS);
+    } catch (error: any) {
+      addToast(`Erro ao regenerar banner: ${error.message}`, ToastType.ERROR);
+      console.error('Regenerate Banner error:', error);
+    } finally {
+      setRegeneratingBannerId(null);
+    }
+  };
+
 
   const handleDownloadZip = async () => {
     if (!project || project.status !== ProjectStatus.COMPLETED) {
@@ -125,6 +182,7 @@ Este pacote contém todos os ativos de branding gerados por Visual Já.
 
 ### Logos
 Localizadas na pasta \`logos/\`. Inclui 4 variações de logo em alta resolução (PNG).
+*Nota: A IA gera logos em formato PNG. O formato SVG não é suportado no momento pela API.*
 
 ### Banners
 Localizados na pasta \`banners/\`. Inclui 3 banners em formatos padrão para redes sociais (PNG).
@@ -318,11 +376,31 @@ Use estes ativos para iniciar ou revitalizar a presença online da sua marca. As
         {project.logos && project.logos.length > 0 && (
           <Card>
             <h3 className="text-2xl font-montserrat font-bold text-light-text mb-4">Logos</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Clique nas imagens para visualização ampliada. Logos disponíveis para download no pacote ZIP em formato PNG.
+              <br />
+              <em className="text-primary-cyan">O formato SVG não é suportado no momento pela IA.</em>
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {project.logos.map((logo) => (
                 <div key={logo.id} className="bg-dark-background-start rounded-lg p-4 flex flex-col items-center border border-primary-cyan/20">
-                  <img src={logo.url} alt={`Logo Variação ${logo.variacao}`} className="w-full h-auto max-w-48 object-contain mb-3 bg-white p-2 rounded" />
+                  <img
+                    src={logo.url}
+                    alt={`Logo Variação ${logo.variacao}`}
+                    className="w-full h-auto max-w-48 object-contain mb-3 bg-white p-2 rounded cursor-pointer hover:scale-105 transition-transform duration-200"
+                    onClick={() => setSelectedImageUrl(logo.url)}
+                  />
                   <p className="text-gray-300 text-sm">Variação {logo.variacao}</p>
+                  <Button
+                    onClick={() => handleRegenerateLogo(logo)}
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 text-sm"
+                    loading={regeneratingLogoId === logo.id}
+                    disabled={regeneratingLogoId !== null}
+                  >
+                    {regeneratingLogoId === logo.id ? 'Gerando...' : 'Gerar Novamente'}
+                  </Button>
                   {(logo.positivePrompt || logo.negativePrompt) && (
                     <div className="mt-4 w-full">
                       <details className="text-primary-cyan cursor-pointer text-sm">
@@ -347,11 +425,29 @@ Use estes ativos para iniciar ou revitalizar a presença online da sua marca. As
         {project.banners && project.banners.length > 0 && (
           <Card>
             <h3 className="text-2xl font-montserrat font-bold text-light-text mb-4">Banners</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Clique nas imagens para visualização ampliada. Banners disponíveis para download no pacote ZIP em formato PNG.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {project.banners.map((banner) => (
                 <div key={banner.id} className="bg-dark-background-start rounded-lg p-4 flex flex-col items-center border border-primary-cyan/20">
-                  <img src={banner.url} alt={`Banner ${banner.formato}`} className="w-full h-auto max-h-80 object-contain mb-3 bg-white p-2 rounded" />
+                  <img
+                    src={banner.url}
+                    alt={`Banner ${banner.formato}`}
+                    className="w-full h-auto max-h-80 object-contain mb-3 rounded-lg cursor-pointer hover:scale-105 transition-transform duration-200 border border-primary-cyan/20" /* Removido bg-white p-2 */
+                    onClick={() => setSelectedImageUrl(banner.url)}
+                  />
                   <p className="text-gray-300 text-sm">{BANNER_FORMAT_LABELS[banner.formato]}</p>
+                  <Button
+                    onClick={() => handleRegenerateBanner(banner)}
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 text-sm"
+                    loading={regeneratingBannerId === banner.id}
+                    disabled={regeneratingBannerId !== null}
+                  >
+                    {regeneratingBannerId === banner.id ? 'Gerando...' : 'Gerar Novamente'}
+                  </Button>
                    {(banner.positivePrompt || banner.negativePrompt) && (
                     <div className="mt-4 w-full">
                       <details className="text-primary-cyan cursor-pointer text-sm">
@@ -412,6 +508,14 @@ Use estes ativos para iniciar ou revitalizar a presença online da sua marca. As
           </Button>
         </div>
       </main>
+
+      {selectedImageUrl && (
+        <ImageModal
+          imageUrl={selectedImageUrl}
+          altText="Imagem ampliada do branding"
+          onClose={() => setSelectedImageUrl(null)}
+        />
+      )}
     </div>
   );
 };
