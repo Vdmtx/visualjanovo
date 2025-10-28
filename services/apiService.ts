@@ -314,12 +314,20 @@ const processProjectInBackground = async (projectId: string) => {
     for (const format of bannerFormats) {
       await delay(7000 + Math.random() * 3000); // Simulate longer image generation
       console.log(`[Backend Sim] Generating Banner (${format}) for ${project.id}`);
+      
+      const headline = project.mediaAnalysis?.pontosFortes?.[0] || project.socialMediaStrategy?.objetivoPrincipal || `${project.name}: Inovação e Design`;
+      const textContent = {
+        slogan: project.slogan,
+        headline: headline,
+      };
+
       const bannerPrompt = generateBannerPrompt(
         project.name,
         project.niche,
         format,
         colorsForImages,
         mediaAnalysis.tonalidadeComunicacao,
+        textContent,
         project.references?.map(ref => ({
           inlineData: { mimeType: ref.mimeType, data: ref.base64Data! }
         }))

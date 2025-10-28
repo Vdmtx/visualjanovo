@@ -102,20 +102,14 @@ export const generateLogoPrompt = (
   communicationTone: string,
   referenceImages?: { inlineData: { mimeType: string; data: string } }[]
 ): string => {
-  const colors = colorPalette.map(c => `{${c}}`).join(', ');
-  const basePrompt = `Professional ${style} logo design for "${brandName}", a ${niche} brand.
-Clean, simple, and modern aesthetic.
-Color palette: ${colors}.
-High contrast, memorable symbol that represents ${communicationTone} tone.
-Suitable for digital and print use.
-Pure icon/symbol design, no text.
-Flat design, vector style, white background.`;
+  const colors = colorPalette.join(', ');
+  const basePrompt = `Design a professional, ${style} logo for "${brandName}", a company in the ${niche} sector.
+The aesthetic should be clean, simple, and modern, reflecting a ${communicationTone} tone.
+The logo must be a memorable icon/symbol. It can optionally incorporate the brand name "${brandName}" in a clean, sans-serif font.
+Use ONLY the following colors in the design: ${colors}.
+The final image should be a flat design, vector style, on a solid white background.
+**Important: Do NOT display the hex color codes or any other text besides the brand name on the image.**`;
 
-  // For this simplified frontend, we'll just include a textual reference to images
-  // In a real backend, you'd send the actual image parts to Gemini's multi-modal API.
-  // The Gemini Image Generation API (imagen-4.0) only takes a prompt string.
-  // If we were using gemini-2.5-flash-image, we'd add image parts directly to contents.
-  // For imagen-4.0, the prompt has to be descriptive enough.
   return basePrompt;
 };
 
@@ -125,9 +119,10 @@ export const generateBannerPrompt = (
   format: BannerFormat,
   colorPalette: string[],
   communicationTone: string,
+  textContent: { slogan?: string; headline: string },
   referenceImages?: { inlineData: { mimeType: string; data: string } }[]
 ): string => {
-  const colors = colorPalette.map(c => `${c}`).join(', ');
+  const colors = colorPalette.join(', ');
   let aspectRatioText = '';
   let formatDescription = '';
   switch (format) {
@@ -145,19 +140,22 @@ export const generateBannerPrompt = (
       break;
   }
 
-  // New, more descriptive prompt to avoid mockups
   const basePrompt = `Create a professional and visually striking ${formatDescription} social media banner for the brand "${brandName}", which is in the ${niche} sector.
 The banner must have a ${aspectRatioText}.
-It must feature a dynamic and clean layout with a dark gradient background using the colors: ${colors}.
-The design should incorporate abstract geometric shapes and subtle light effects to convey a sense of innovation and technology.
-The brand name "${brandName}" must be prominently displayed in a modern, bold sans-serif font.
-Also include a placeholder headline text.
+The design should feature a dynamic and clean layout with a dark gradient background using ONLY the colors: ${colors}.
+It should incorporate abstract geometric shapes and subtle light effects to convey a sense of innovation and technology.
+The banner must prominently feature the following text:
+- Headline: "${textContent.headline}"
+- Brand Name: "${brandName}"
+${textContent.slogan ? `- Slogan (optional, if it fits well): "${textContent.slogan}"` : ''}
+Use a modern, bold sans-serif font for the text. Ensure all text is legible and well-integrated into the design.
 The overall aesthetic should be ${communicationTone}, professional, and impactful.
-**Important: Do NOT include any phone mockups, device frames, or screenshots. The design must be a standalone graphic banner suitable for social media advertising.**
-Optionally, include a high-quality, professional photo of a person who represents the target audience, seamlessly integrated into the design.`;
+Optionally, include a high-quality, professional photo of a person who represents the target audience, seamlessly integrated into the design.
+**Important: Do NOT include any phone mockups, device frames, or screenshots. The design must be a standalone graphic. Do NOT display the hex color codes on the image.**`;
 
   return basePrompt;
 };
+
 
 export const continuousGenerationPromptsSchema = {
   type: Type.OBJECT,
