@@ -38,8 +38,28 @@ import {
   fileToBase64,
 } from './geminiService';
 
-// --- In-memory database (simulated) ---
-const projects: BrandingProject[] = [];
+// --- In-memory database (simulated with localStorage) ---
+const STORAGE_KEY = 'visual-ja-projects';
+let projects: BrandingProject[] = [];
+
+try {
+  const storedProjects = localStorage.getItem(STORAGE_KEY);
+  if (storedProjects) {
+    projects = JSON.parse(storedProjects);
+  }
+} catch (e) {
+  console.error("Failed to load projects from localStorage", e);
+  projects = [];
+}
+
+const saveProjectsToStorage = () => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+  } catch (e) {
+    console.error("Failed to save projects to localStorage", e);
+  }
+};
+
 
 // --- Helper Functions ---
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -87,6 +107,7 @@ export const createProject = async (
   }
 
   projects.push(newProject);
+  saveProjectsToStorage();
   // Start background processing immediately after creation
   processProjectInBackground(newProject.id);
   return newProject;
@@ -96,6 +117,22 @@ export const getProject = async (projectId: string): Promise<BrandingProject | u
   await delay(300); // Simulate API call latency
   return projects.find(p => p.id === projectId);
 };
+
+export const getProjects = async (): Promise<BrandingProject[]> => {
+  await delay(100);
+  // Return a copy sorted by most recent
+  return [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+};
+
+export const deleteProject = async (projectId: string): Promise<void> => {
+  await delay(300);
+  const projectIndex = projects.findIndex(p => p.id === projectId);
+  if (projectIndex > -1) {
+    projects.splice(projectIndex, 1);
+    saveProjectsToStorage();
+  }
+};
+
 
 // --- Background Processing (Simulated) ---
 
@@ -111,6 +148,7 @@ const processProjectInBackground = async (projectId: string) => {
     const updateProject = (updates: Partial<BrandingProject>) => {
       Object.assign(project, updates);
       project.updatedAt = new Date().toISOString();
+      saveProjectsToStorage();
       // In a real app, this would trigger a database save and potentially a websocket update.
       // For simulation, we just modify the in-memory object.
     };
@@ -267,7 +305,7 @@ const processProjectInBackground = async (projectId: string) => {
         positivePrompt: continuousLogoPrompts.positive,
         negativePrompt: continuousLogoPrompts.negative,
       });
-      updateProject({ logos: generatedLogos });
+      updateProject({ logos: [...generatedLogos] });
     }
 
     // 7. Generate 3 Banners (sequential)
@@ -343,7 +381,7 @@ const processProjectInBackground = async (projectId: string) => {
         positivePrompt: continuousBannerPrompts.positive,
         negativePrompt: continuousBannerPrompts.negative,
       });
-      updateProject({ banners: generatedBanners });
+      updateProject({ banners: [...generatedBanners] });
     }
 
     // 8. Finalize project
@@ -356,6 +394,7 @@ const processProjectInBackground = async (projectId: string) => {
     // For this simulation, we mark it as failed and store the error message.
     project.status = ProjectStatus.FAILED;
     project.updatedAt = new Date().toISOString();
+    saveProjectsToStorage();
     // Potentially add an errorMessage field to BrandingProject
     console.log(`[Backend Sim] Project ${projectId} failed.`);
   }
@@ -421,7 +460,8 @@ export const regenerateLogo = async (projectId: string, logoToReplace: Logo): Pr
   };
 
   project.logos = project.logos?.map(logo => logo.id === logoToReplace.id ? newLogo : logo);
-  Object.assign(project, { updatedAt: new Date().toISOString() }); // Update project timestamp
+  project.updatedAt = new Date().toISOString();
+  saveProjectsToStorage();
 
   return newLogo;
 };
@@ -503,7 +543,8 @@ export const regenerateBanner = async (projectId: string, bannerToReplace: Banne
   };
 
   project.banners = project.banners?.map(banner => banner.id === bannerToReplace.id ? newBanner : banner);
-  Object.assign(project, { updatedAt: new Date().toISOString() }); // Update project timestamp
+  project.updatedAt = new Date().toISOString();
+  saveProjectsToStorage();
 
   return newBanner;
 };

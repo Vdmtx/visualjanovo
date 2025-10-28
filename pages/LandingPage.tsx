@@ -1,12 +1,57 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { getProjects, deleteProject } from '../services/apiService';
+import { BrandingProject, ProjectStatus } from '../types';
+import { Card } from '../components/ui/Card';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const [projects, setProjects] = React.useState<BrandingProject[]>([]);
+  const [loadingProjects, setLoadingProjects] = React.useState<boolean>(true);
+
+  React.useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        const fetchedProjects = await getProjects();
+        setProjects(fetchedProjects);
+      } catch (error) {
+        console.error("Failed to load projects", error);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+    loadProjects();
+  }, []);
 
   const handleStartCreation = () => {
     navigate('/criar');
+  };
+
+  const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    if (window.confirm('Tem certeza de que deseja excluir este projeto? Esta ação não pode ser desfeita.')) {
+      try {
+        await deleteProject(projectId);
+        setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+      } catch (error) {
+        console.error("Failed to delete project", error);
+      }
+    }
+  };
+
+  const getStatusBadge = (status: ProjectStatus) => {
+    const baseClasses = "inline-block px-2 py-1 text-xs font-semibold rounded-full";
+    switch (status) {
+      case ProjectStatus.COMPLETED:
+        return <span className={`${baseClasses} bg-green-500/20 text-green-300 border border-green-500/30`}>Completo</span>;
+      case ProjectStatus.PROCESSING:
+        return <span className={`${baseClasses} bg-blue-500/20 text-blue-300 border border-blue-500/30`}>Processando</span>;
+      case ProjectStatus.FAILED:
+        return <span className={`${baseClasses} bg-red-500/20 text-red-300 border border-red-500/30`}>Falhou</span>;
+      default:
+        return null;
+    }
   };
 
   return (
@@ -53,6 +98,43 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </main>
+
+      <section className="mt-16 max-w-4xl w-full">
+        <h3 className="text-3xl font-montserrat font-bold text-light-text mb-6 text-center">Projetos Recentes</h3>
+        {loadingProjects ? (
+          <div className="text-center text-gray-400">Carregando projetos...</div>
+        ) : projects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map(project => (
+              <Card key={project.id} className="flex flex-col justify-between hover:border-primary-cyan transition-colors">
+                <div className="flex-grow">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="text-lg font-bold font-montserrat text-light-text truncate pr-2" title={project.name}>{project.name}</h4>
+                    {getStatusBadge(project.status)}
+                  </div>
+                  <p className="text-sm text-gray-400 mb-2 truncate" title={project.niche}>{project.niche}</p>
+                  <p className="text-xs text-gray-500">Criado em: {new Date(project.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="mt-4 flex justify-end gap-2">
+                  <Button variant="secondary" size="sm" onClick={() => navigate(`/resultado/${project.id}`)}>
+                    Abrir
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={(e) => handleDeleteProject(e, project.id)}>
+                    Excluir
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-400 p-8 bg-primary-cyan/5 rounded-lg">
+            <p>Você ainda não criou nenhum projeto.</p>
+            <Button onClick={handleStartCreation} variant="primary" size="md" className="mt-4 text-dark-background-start">
+              Começar Agora
+            </Button>
+          </div>
+        )}
+      </section>
 
       <section className="bg-gradient-to-r from-primary-cyan/10 to-transparent p-8 mt-16 rounded-xl max-w-4xl w-full text-center">
         <h3 className="text-3xl font-montserrat font-bold text-light-text mb-6">Como Funciona:</h3>
