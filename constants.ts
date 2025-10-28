@@ -17,58 +17,58 @@ export const DEFAULT_NICHE = 'Design de Branding com IA';
 export const DEFAULT_DESCRIPTION = 'Uma plataforma inovadora que permite criar identidade visual e estratégias de marketing completas usando inteligência artificial, sem a necessidade de agências ou profissionais intermediários. Foco em velocidade, personalização e custo-benefício.';
 
 export const EXAMPLE_MEDIA_ANALYSIS_PROMPT = `
-Você é um especialista em análise de mídia e branding. Analise a seguinte marca e forneça insights em linguagem popular e acessível:
+Pense como um especialista em marcas de sucesso. Olhe para esta marca:
 
-Nome da Marca: {nome}
-Nicho: {nicho}
-Descrição: {descricao}
+Marca: {nome}
+Atuação: {nicho}
+O que faz: {descricao}
 
-Forneça uma análise completa em formato JSON com:
-- resumo: Um resumo geral da marca em 2-3 frases
-- publicoAlvo: Descrição do público-alvo ideal
-- tonalidadeComunicacao: Tom de voz recomendado para a comunicação
-- pontosFortes: Array com 3-5 pontos fortes da marca
-- oportunidades: Array com 3-5 oportunidades de mercado
+Agora, me dê um raio-x dela, em formato JSON, de um jeito fácil de entender:
+- resumo: A marca em duas frases.
+- publicoAlvo: Para quem essa marca vende? (Descreva a pessoa ideal).
+- tonalidadeComunicacao: Como a marca deve falar? (Ex: Amigável, séria, divertida?).
+- pontosFortes: O que essa marca tem de muito bom? (Liste 3 a 5 coisas).
+- oportunidades: O que a marca pode aproveitar para crescer? (Liste 3 a 5 ideias).
 
-Use linguagem simples e direta, sem jargões técnicos.
+Seja super direto e simples, como se estivesse explicando para um amigo.
 `;
 
 export const EXAMPLE_SOCIAL_MEDIA_STRATEGY_PROMPT = `
-Você é um especialista em estratégia de mídia social. Com base na seguinte análise de marca:
+Pense como um guru das redes sociais. Com base nestas informações da marca:
 
-Nome da Marca: {nome}
-Nicho: {nicho}
-Descrição: {descricao}
-Público-alvo: {publicoAlvo}
-Tom de comunicação: {tonalidadeComunicacao}
+Marca: {nome}
+Atuação: {nicho}
+O que faz: {descricao}
+Para quem vende: {publicoAlvo}
+Como fala: {tonalidadeComunicacao}
 
-Gere uma estratégia de mídia social completa em formato JSON com:
-- objetivoPrincipal: O principal objetivo da estratégia (1 frase)
-- plataformasRecomendadas: Array com 3-5 plataformas sociais recomendadas
-- tiposConteudo: Array com 5-7 tipos de conteúdo para produzir em cada plataforma
-- frequenciaPostagem: Frequência de postagem recomendada (ex: "3-5 vezes por semana")
-- hashtags: Array com 8-12 hashtags relevantes
+Crie um plano de ação para as redes sociais dela, em formato JSON, bem mastigado:
+- objetivoPrincipal: O que queremos alcançar com as redes sociais? (Em uma frase).
+- plataformasRecomendadas: Onde a marca deve estar? (Liste de 3 a 5 redes sociais).
+- tiposConteudo: O que postar? (Dê de 5 a 7 ideias de posts).
+- frequenciaPostagem: Quantas vezes postar? (Ex: "3 posts por semana").
+- hashtags: Quais # usar? (Liste de 8 a 12 hashtags boas).
 
-Use linguagem simples e direta, sem jargões técnicos.
+Use palavras simples. Imagine que está dando dicas para alguém que nunca mexeu com marketing.
 `;
 
 export const EXAMPLE_PAID_TRAFFIC_STRATEGY_PROMPT = `
-Você é um especialista em estratégia de tráfego pago. Com base na seguinte análise de marca:
+Pense como um especialista em anúncios online que manja muito. Com base nestas informações da marca:
 
-Nome da Marca: {nome}
-Nicho: {nicho}
-Descrição: {descricao}
-Público-alvo: {publicoAlvo}
-Tom de comunicação: {tonalidadeComunicacao}
+Marca: {nome}
+Atuação: {nicho}
+O que faz: {descricao}
+Para quem vende: {publicoAlvo}
+Como fala: {tonalidadeComunicacao}
 
-Gere uma estratégia de tráfego pago completa em formato JSON com:
-- plataformasAnuncios: Array com 3-4 plataformas de anúncios recomendadas
-- orcamentoMensal: Sugestão de orçamento mensal (ex: "R$ 1.000 - R$ 3.000")
-- segmentacaoIdeal: Descrição detalhada da segmentação ideal
-- tiposAnuncios: Array com 4-6 tipos de anúncios recomendados (ex: "Display", "Vídeo", "Carrossel")
-- metricasImportantes: Array com 5-7 métricas importantes para acompanhar (ex: "CPC", "CTR", "ROAS")
+Crie um plano para anunciar na internet, em formato JSON, de forma que qualquer um entenda:
+- plataformasAnuncios: Onde anunciar? (Liste 3 a 4 lugares, como Instagram, Google, etc.).
+- orcamentoMensal: Quanto investir por mês? (Dê uma sugestão, ex: "de R$ 500 a R$ 1.500").
+- segmentacaoIdeal: Para quem mostrar os anúncios? (Descreva o público em detalhes).
+- tiposAnuncios: Que tipo de anúncio fazer? (Dê 4 a 6 ideias, ex: "Foto bonita", "Vídeo curto", "Anúncio que aparece no story").
+- metricasImportantes: Como saber se está dando certo? (Liste 5 a 7 coisas para ficar de olho, e explique o que cada uma significa de forma simples, sem siglas como CPC ou CTR).
 
-Use linguagem simples e direta, sem jargões técnicos.
+Seja muito claro e direto. Zero complicação.
 `;
 
 export const EXAMPLE_SLOGAN_PROMPT = `
@@ -127,27 +127,34 @@ export const generateBannerPrompt = (
   communicationTone: string,
   referenceImages?: { inlineData: { mimeType: string; data: string } }[]
 ): string => {
-  const colors = colorPalette.map(c => `{${c}}`).join(', ');
+  const colors = colorPalette.map(c => `${c}`).join(', ');
   let aspectRatioText = '';
+  let formatDescription = '';
   switch (format) {
     case BannerFormat.SQUARE:
-      aspectRatioText = '1:1 aspect ratio for Instagram/Facebook/LinkedIn posts.';
+      aspectRatioText = '1:1 aspect ratio';
+      formatDescription = 'square';
       break;
     case BannerFormat.VERTICAL_STORY:
-      aspectRatioText = '9:16 aspect ratio for Instagram/TikTok stories.';
+      aspectRatioText = '9:16 aspect ratio';
+      formatDescription = 'vertical';
       break;
     case BannerFormat.VERTICAL_FEED:
-      aspectRatioText = '4:5 aspect ratio for Instagram/Pinterest feed posts.';
+      aspectRatioText = '4:5 aspect ratio';
+      formatDescription = 'vertical';
       break;
   }
 
-  const basePrompt = `Professional ${format === BannerFormat.SQUARE ? 'square' : 'vertical'} social media banner for "${brandName}" brand, ${niche} business.
-${aspectRatioText}
-Dark gradient background with colors: ${colors.split(', ')[0]}, ${colors.split(', ')[1]}.
-Bold headline in modern sans-serif font.
-Include brand name "${brandName}" prominently.
-${communicationTone} aesthetic.
-Clean, minimalist layout, strong visual hierarchy, professional and impactful.`;
+  // New, more descriptive prompt to avoid mockups
+  const basePrompt = `Create a professional and visually striking ${formatDescription} social media banner for the brand "${brandName}", which is in the ${niche} sector.
+The banner must have a ${aspectRatioText}.
+It must feature a dynamic and clean layout with a dark gradient background using the colors: ${colors}.
+The design should incorporate abstract geometric shapes and subtle light effects to convey a sense of innovation and technology.
+The brand name "${brandName}" must be prominently displayed in a modern, bold sans-serif font.
+Also include a placeholder headline text.
+The overall aesthetic should be ${communicationTone}, professional, and impactful.
+**Important: Do NOT include any phone mockups, device frames, or screenshots. The design must be a standalone graphic banner suitable for social media advertising.**
+Optionally, include a high-quality, professional photo of a person who represents the target audience, seamlessly integrated into the design.`;
 
   return basePrompt;
 };
@@ -214,13 +221,13 @@ Plataformas Sociais Recomendadas: {plataformasRecomendadas}
 
 Gere um objeto JSON com dois prompts para geração de imagem de banner:
 1. Um prompt 'positive': Descreva uma variação de banner que reforce o objetivo principal da estratégia de mídia social, usando o tom e a estética da marca. Foco em uma nova abordagem visual ou mensagem poderosa para a plataforma específica.
-2. Um prompt 'negative': Descreva uma variação de banner que a marca **deve evitar**, por não se alinhar com a estratégia de mídia social, o tom de comunicação, o público-alvo ou ser visualmente ineficaz/confuso para o formato.
+2. Um prompt 'negative': Descreva uma variação de banner que a marca **deve evitar**, por não se alinhar com a estratégia de mídia social, o tom de comunicação, o público-alvo ou ser visualmente ineficaz/confuso para o formato (ex: incluir um mockup de celular).
 
 Use linguagem clara, concisa e orientada para IA de geração de imagem para os prompts. Os prompts devem ser curtos e focados.
 
 Exemplo de saída:
 {
-  "positive": "Um banner vertical 9:16 para Instagram Stories, com fundo gradiente, tipografia moderna e imagem impactante que celebra a autonomia criativa, usando as cores principais.",
-  "negative": "Um banner 1:1 quadrado para Facebook com muitos elementos, texto ilegível, cores desarmoniosas e uma imagem clichê de aperto de mãos, estilo antiquado."
+  "positive": "Um banner vertical 9:16 para Instagram Stories, com fundo gradiente, tipografia moderna e uma imagem impactante de uma pessoa focada, celebrando a autonomia criativa, usando as cores principais.",
+  "negative": "Um banner 1:1 quadrado para Facebook que usa um mockup de celular, com muitos elementos, texto ilegível e cores desarmoniosas, estilo antiquado."
 }
 `;

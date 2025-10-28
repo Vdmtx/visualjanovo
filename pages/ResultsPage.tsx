@@ -181,8 +181,9 @@ Este pacote contém todos os ativos de branding gerados por Visual Já.
 ## Conteúdo do Pacote
 
 ### Logos
-Localizadas na pasta \`logos/\`. Inclui 4 variações de logo em alta resolução (PNG).
-*Nota: A IA gera logos em formato PNG. O formato SVG não é suportado no momento pela API.*
+Localizadas na pasta \`logos/\`. Inclui 4 variações de logo em formato PNG de alta resolução.
+
+**Sobre o formato SVG:** A tecnologia de IA atual é especializada em gerar imagens (pixels), como PNGs, e ainda não cria arquivos vetoriais (SVG) diretamente. No entanto, os logos foram criados com um design limpo e de alto contraste, o que os torna ideais para serem convertidos para SVG usando ferramentas online gratuitas ou programas de design como Inkscape ou Illustrator.
 
 ### Banners
 Localizados na pasta \`banners/\`. Inclui 3 banners em formatos padrão para redes sociais (PNG).
@@ -365,8 +366,8 @@ Use estes ativos para iniciar ou revitalizar a presença online da sua marca. As
                   <div
                     className="w-24 h-24 rounded-lg shadow-md border border-gray-600"
                     style={{ backgroundColor: color }}
+                    title={color}
                   ></div>
-                  <span className="mt-2 text-sm font-mono text-gray-300">{color}</span>
                 </div>
               ))}
             </div>
@@ -377,9 +378,9 @@ Use estes ativos para iniciar ou revitalizar a presença online da sua marca. As
           <Card>
             <h3 className="text-2xl font-montserrat font-bold text-light-text mb-4">Logos</h3>
             <p className="text-gray-400 text-sm mb-4">
-              Clique nas imagens para visualização ampliada. Logos disponíveis para download no pacote ZIP em formato PNG.
+              Clique nas imagens para visualização ampliada. Os logos são gerados em formato PNG de alta resolução.
               <br />
-              <em className="text-primary-cyan">O formato SVG não é suportado no momento pela IA.</em>
+              <strong className="text-primary-cyan/80">Por que não em SVG?</strong> A tecnologia de IA atual gera imagens (pixels), não vetores (SVG). Porém, o estilo 'flat' e de alto contraste facilita a conversão para SVG com ferramentas externas.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {project.logos.map((logo) => (
